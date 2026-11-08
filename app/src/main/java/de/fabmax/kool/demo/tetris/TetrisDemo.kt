@@ -6,7 +6,9 @@ import de.fabmax.kool.demo.menu.DemoMenu
 import de.fabmax.kool.input.InputStack
 import de.fabmax.kool.input.KeyEvent
 import de.fabmax.kool.input.KeyboardInput
+import de.fabmax.kool.input.Pointer
 import de.fabmax.kool.input.UniversalKeyCode
+import de.fabmax.kool.math.MutableVec2f
 import de.fabmax.kool.math.Vec3f
 import de.fabmax.kool.modules.ksl.KslPbrShader
 import de.fabmax.kool.modules.ui2.*
@@ -26,6 +28,13 @@ class TetrisDemo : DemoScene("Tetris") {
     private val game = TetrisGame()
     private val renderer = TetrisRenderer(game)
     private val keyListener = InputStack.KeyboardListener { keyEvents, _ -> keyEvents.forEach { handleInput(it) } }
+    private val pointerListener = InputStack.PointerListener { pointerState, _ -> handlePointer(pointerState.primaryPointer) }
+
+    // touch gesture state
+    private val touchAnchor = MutableVec2f()
+    private var touchStartTime = 0.0
+    private var touchActive = false
+    private var touchMoved = false
     private lateinit var gameMesh: ColorMesh
     private val overlay = Scene("tetris-overlay")
 
@@ -40,6 +49,7 @@ class TetrisDemo : DemoScene("Tetris") {
         camera.lookAt.set(TetrisGame.WIDTH * game.blockSize / 2f, TetrisGame.HEIGHT * game.blockSize / 2f, 0f)
 
         InputStack.defaultInputHandler.keyboardListeners += keyListener
+        InputStack.defaultInputHandler.pointerListeners += pointerListener
 
         lighting.clear()
         lighting.addLight(Light.Directional().apply {
@@ -140,9 +150,72 @@ class TetrisDemo : DemoScene("Tetris") {
         }
     }
 
+    /**
+     * Touch controls:
+     * - swipe left / right: move the piece one cell per swipe step (longer swipe = more cells)
+     * - swipe down: soft drop, one cell per swipe step
+     * - tap (short touch without swiping): rotate the piece
+     * - tap while the game-over overlay is shown: restart
+     */
+    private fun handlePointer(ptr: Pointer) {
+        if (!ptr.isValid || ptr.isConsumed()) {
+            return
+        }
+
+        if (game.isGameOver.value) {
+            if (ptr.isLeftButtonPressed) {
+                game.reset()
+                ptr.consume()
+            }
+            return
+        }
+        if (game.isPaused.value) {
+            return
+        }
+
+        // distance the finger has to travel for one move / drop step
+        val stepPx = 36f * ptr.windowScale
+        when {
+            ptr.isLeftButtonPressed -> {
+                touchAnchor.set(ptr.pos)
+                touchStartTime = Time.gameTime
+                touchActive = true
+                touchMoved = false
+            }
+            ptr.isLeftButtonDown && touchActive -> {
+                while (ptr.pos.x - touchAnchor.x > stepPx) {
+                    game.move(1)
+                    touchAnchor.x += stepPx
+                    touchMoved = true
+                }
+                while (touchAnchor.x - ptr.pos.x > stepPx) {
+                    game.move(-1)
+                    touchAnchor.x -= stepPx
+                    touchMoved = true
+                }
+                while (ptr.pos.y - touchAnchor.y > stepPx) {
+                    game.softDrop()
+                    touchAnchor.y += stepPx
+                    touchMoved = true
+                }
+                if (touchMoved) {
+                    ptr.consume()
+                }
+            }
+            ptr.isLeftButtonReleased -> {
+                if (touchActive && !touchMoved && Time.gameTime - touchStartTime < 0.35) {
+                    game.rotate()
+                    ptr.consume()
+                }
+                touchActive = false
+            }
+        }
+    }
+
     override fun onRelease(ctx: KoolContext) {
         super.onRelease(ctx)
         InputStack.defaultInputHandler.keyboardListeners -= keyListener
+        InputStack.defaultInputHandler.pointerListeners -= pointerListener
     }
 
     // Helper function for rendering control keys
@@ -218,6 +291,18 @@ class TetrisDemo : DemoScene("Tetris") {
         MenuRow {
             Text("Pause".l) { modifier.width(120.dp).textAlignX(AlignmentX.End).margin(end = sizes.gap) }
             KeyButton("P")
+        }
+        MenuRow {
+            Text("Move (touch)".l) { modifier.width(120.dp).textAlignX(AlignmentX.End).margin(end = sizes.gap) }
+            Text("Swipe ◀ ▶".l) { labelStyle() }
+        }
+        MenuRow {
+            Text("Rotate (touch)".l) { modifier.width(120.dp).textAlignX(AlignmentX.End).margin(end = sizes.gap) }
+            Text("Tap".l) { labelStyle() }
+        }
+        MenuRow {
+            Text("Drop (touch)".l) { modifier.width(120.dp).textAlignX(AlignmentX.End).margin(end = sizes.gap) }
+            Text("Swipe ▼".l) { labelStyle() }
         }
     }
 }

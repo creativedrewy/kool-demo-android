@@ -49,6 +49,7 @@ dl org/jetbrains/kotlinx/kotlinx-serialization-core-jvm/1.9.0/kotlinx-serializat
 dl org/jetbrains/kotlinx/atomicfu-jvm/0.29.0/atomicfu-jvm-0.29.0.jar atomicfu.jar
 dl org/jetbrains/kotlin/kotlin-compiler-embeddable/2.2.21/kotlin-compiler-embeddable-2.2.21.jar kotlin-compiler-embeddable.jar
 dl org/jetbrains/kotlin/kotlin-reflect/2.2.21/kotlin-reflect-2.2.21.jar kotlin-reflect.jar
+dl org/jetbrains/annotations/13.0/annotations-13.0.jar jetbrains-annotations.jar
 
 for a in kool-core kool-physics kool-physics-2d physx box2d androidsvg; do
   mkdir -p $WORK/extracted/$a
@@ -59,7 +60,7 @@ done
 mkdir -p $WORK/fonts
 if [ ! -f $WORK/fonts/fira-sans-regular.json ]; then
   git -C ${KOOL_SRC:-$HOME/workspace/kool-android/kool-src} archive v$KOOL_VERSION kool-core/src/androidMain/resources/fonts \
-    | tar -x -C $WORK/fonts --strip-components=4
+    | tar -x -C $WORK/fonts --strip-components=5
 fi
 
 CP="$AJAR"
@@ -83,7 +84,7 @@ sed -e 's|<manifest |<manifest package="de.fabmax.kool.demo" |' \
 $BT/aapt2 compile --dir $APP/res -o $WORK/pkg/app-res.zip
 $BT/aapt2 compile --dir $WORK/extracted/androidsvg/res -o $WORK/pkg/svg-res.zip
 $BT/aapt2 link -o $WORK/pkg/base.apk -I $AJAR --manifest $WORK/pkg/AndroidManifest.xml \
-  --min-sdk-version 28 --target-sdk-version 36 --version-code 1 --version-name 1.0 \
+  --min-sdk-version 28 --target-sdk-version 36 --version-code 2 --version-name 1.1 \
   --auto-add-overlay $WORK/pkg/app-res.zip $WORK/pkg/svg-res.zip
 
 echo "== d8 =="
@@ -98,11 +99,13 @@ for a in kool-core physx box2d; do cp -r $WORK/extracted/$a/jni/* $WORK/stage/li
 cp -r $APP/assets $WORK/stage/assets
 cp -r $WORK/fonts $WORK/stage/fonts
 for j in $INPUTS; do
-  $JAVA_HOME/bin/jar tf "$j" 2>/dev/null | grep "^META-INF/services/" | while read -r s; do
+  $JAVA_HOME/bin/jar tf "$j" 2>/dev/null | grep "^META-INF/services/." | while read -r s; do
     unzip -p "$j" "$s" >> "$WORK/stage/$s.merged" 2>/dev/null || true
-  done
+  done || true
 done
-for f in $WORK/stage/META-INF/services/*.merged; do [ -e "$f" ] && mv "$f" "${f%.merged}"; done
+for f in $WORK/stage/META-INF/services/*.merged; do
+  if [ -e "$f" ]; then mv "$f" "${f%.merged}"; fi
+done
 
 cp $WORK/pkg/base.apk $WORK/pkg/unsigned.apk
 ( cd $WORK/stage && zip -q -r ../pkg/unsigned.apk . )
