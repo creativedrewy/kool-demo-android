@@ -1,0 +1,20 @@
+[versions]
+agp = "8.12.3"
+kotlin = "2.2.21"
+kool = "0.19.0"
+androidsvg = "1.4"
+kotlin-coroutines = "1.10.2"
+kotlin-serialization = "1.9.0"
+
+[libraries]
+kool-core = { group = "de.fabmax.kool", name = "kool-core", version.ref = "kool" }
+kool-physics = { group = "de.fabmax.kool", name = "kool-physics", version.ref = "kool" }
+kool-physics2d = { group = "de.fabmax.kool", name = "kool-physics-2d", version.ref = "kool" }
+androidsvg = { group = "com.caverock", name = "androidsvg-aar", version.ref = "androidsvg" }
+kotlin-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlin-coroutines" }
+kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlin-serialization" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+jetbrainsKotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
