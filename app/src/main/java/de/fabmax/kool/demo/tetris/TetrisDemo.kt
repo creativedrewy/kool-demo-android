@@ -82,7 +82,7 @@ class TetrisDemo : DemoScene("Tetris") {
     override fun lateInit(ctx: KoolContext) {
         super.lateInit(ctx)
         overlay.setupUiScene()
-        overlay.addPanelSurface {
+        val overlaySurface = overlay.addPanelSurface {
             modifier
                 .size(Grow.Std, Grow.Std)
                 .background(null)
@@ -120,6 +120,11 @@ class TetrisDemo : DemoScene("Tetris") {
                 }
             }
         }
+        // The overlay panel covers the whole screen and would otherwise capture (block) all
+        // pointer input before it reaches the touch controls in the main scene. Passthrough mode
+        // keeps overlay UI (e.g. the restart button) working but lets all non-consumed pointer
+        // events through to the InputStack handlers below it.
+        overlaySurface.inputMode = UiSurface.InputCaptureMode.CapturePassthrough
     }
 
     private fun handleInput(it: KeyEvent) {

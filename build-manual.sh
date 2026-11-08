@@ -84,7 +84,7 @@ sed -e 's|<manifest |<manifest package="de.fabmax.kool.demo" |' \
 $BT/aapt2 compile --dir $APP/res -o $WORK/pkg/app-res.zip
 $BT/aapt2 compile --dir $WORK/extracted/androidsvg/res -o $WORK/pkg/svg-res.zip
 $BT/aapt2 link -o $WORK/pkg/base.apk -I $AJAR --manifest $WORK/pkg/AndroidManifest.xml \
-  --min-sdk-version 28 --target-sdk-version 36 --version-code 2 --version-name 1.1 \
+  --min-sdk-version 28 --target-sdk-version 36 --version-code 3 --version-name 1.2 \
   --auto-add-overlay $WORK/pkg/app-res.zip $WORK/pkg/svg-res.zip
 
 echo "== d8 =="
